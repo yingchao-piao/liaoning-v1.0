@@ -62,25 +62,43 @@ var map = new ol.Map({
 });
 
 //点击地图查看相关feature信息
-map.on('singleclick', function(evt) {
-    document.getElementById('info').innerHTML = '';
-    var viewResolution = /** @type {number} */ (mapModule.defaultView.getResolution());
-    var url = mapLayerSource.baseLayerSource.xbm_wms_source.getGetFeatureInfoUrl(
-        evt.coordinate, viewResolution, 'EPSG:4326',
+var viewProjection = mapModule.defaultView.getProjection();
+var viewResolution = mapModule.defaultView.getResolution();
+var container = document.getElementById('info');
+
+map.on('click', function(evt) {
+    var url = mapModule.xbm_wms_layer.getSource().getGetFeatureInfoUrl(
+        evt.coordinate, viewResolution, viewProjection,
         {'INFO_FORMAT': 'text/html'});
     if (url) {
-        document.getElementById('info').innerHTML =
-            '<iframe seamless src="' + url + '"></iframe>';
+        //点击地图查看相关feature信息(返回html形式)
+        $.ajax({
+            url: url,
+            dataType: "html",
+            success: function (data) {
+                $('#info').html(data);
+            },
+            error: function (e) {
+                alert('Error: ' + e);
+            }
+        });
+        //点击地图查看相关feature信息(返回json形式)
+        // var parser = new ol.format.GeoJSON();
+        // $.ajax({
+        //     url: url,
+        //     dataType: 'json',
+        //     jsonCallback: 'response'
+        // }).then(function(response) {
+        //     var result = parser.readFeatures(response);
+        //     if (result.length) {
+        //         var info = [];
+        //         for (var i = 0, ii = result.length; i < ii; ++i) {
+        //             info.push(result[i].get('OBJECTID'));
+        //         }
+        //         container.innerHTML = info.join(', ');
+        //     } else {
+        //         container.innerHTML = '&nbsp;';
+        //     }
+        // });
     }
-});
-
-map.on('pointermove', function(evt) {
-    if (evt.dragging) {
-        return;
-    }
-    var pixel = map.getEventPixel(evt.originalEvent);
-    var hit = map.forEachLayerAtPixel(pixel, function() {
-        return true;
-    });
-    map.getTargetElement().style.cursor = hit ? 'pointer' : '';
 });

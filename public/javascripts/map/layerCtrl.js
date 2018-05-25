@@ -126,15 +126,16 @@ map.on('click', function(evt) {
     //     });
     // }
     //点击地图关联查询属性域表返回相关feature信息(json形式)
+
     var url = mapModule.xbm_wms_layer.getSource().getGetFeatureInfoUrl(
         evt.coordinate, viewResolution, viewProjection,
-        {'INFO_FORMAT': 'application/json',
-         'propertyName': 'OBJECTID,C_XIAN,C_XIANG,C_CUN,C_LB,C_XB,C_TFH,C_SHUIXI,C_STFQ,C_SZZC,C_SZZCHZ'
-        });
+        {'INFO_FORMAT': 'application/json'});
     if(url){
-        var featureSearch = {};
+        var featuresearch = {};
+
         var parser = new ol.format.GeoJSON();
         $.ajax({
+            async: false,
             url: url,
             dataType: 'json',
             jsonCallback: 'response'
@@ -142,13 +143,20 @@ map.on('click', function(evt) {
             var result = parser.readFeatures(response);
             if (result.length) {
                 for (var i = 0, ii = result.length; i < ii; ++i) {
-                    featureSearch = result[i].values_;
+                    for(var key in result[i].values_){
+                        if(result[i].values_[key] && key!="geometry"){
+                            featuresearch[key] = result[i].values_[key];
+                        }
+                    }
                 }
+
             }
+
             $.ajax({
                 type: 'POST',
                 url: '/liaoningResource/getfeatureinfo',
-                data: JSON.stringify(featureSearch),
+                traditional:true,
+                data: JSON.stringify(featuresearch),
                 dataType: 'json',
                 contentType: 'application/json;charset=utf-8',
                 success: function (response) {

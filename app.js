@@ -22,7 +22,6 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 //路由设置
-app.use('/liaoningResource', liaoningResource);
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/liaoningResource', liaoningResource);

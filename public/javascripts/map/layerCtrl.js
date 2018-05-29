@@ -64,78 +64,18 @@ var map = new ol.Map({
 //点击地图查看相关feature信息
 var viewProjection = mapModule.defaultView.getProjection();
 var viewResolution = mapModule.defaultView.getResolution();
-var container = document.getElementById('info');
 
 map.on('click', function(evt) {
-    //点击地图查看相关feature信息(返回html形式)
-    // var url = mapModule.xbm_wms_layer.getSource().getGetFeatureInfoUrl(
-    //     evt.coordinate, viewResolution, viewProjection,
-    //     {'INFO_FORMAT': 'text/html'});
-    // if (url) {
-    //     $.ajax({
-    //         url: url,
-    //         dataType: "html",
-    //         success: function (data) {
-    //             $('#info').html(data);
-    //         },
-    //         error: function (e) {
-    //             alert('Error: ' + e);
-    //         }
-    //     });
-    // }
-    //点击地图查看相关feature信息(返回json形式)
-    // var url = mapModule.xbm_wms_layer.getSource().getGetFeatureInfoUrl(
-    //     evt.coordinate, viewResolution, viewProjection,
-    //     {'INFO_FORMAT': 'application/json',
-    //      'propertyName': 'OBJECTID,C_XIAN,C_XIANG,C_CUN,C_LB,C_XB,C_TFH,C_SHUIXI,C_STFQ,C_SZZC,C_SZZCHZ'
-    //     });
-    // if(url){
-    //     var parser = new ol.format.GeoJSON();
-    //     $.ajax({
-    //         url: url,
-    //         dataType: 'json',
-    //         jsonCallback: 'response'
-    //     }).then(function(response) {
-    //         var result = parser.readFeatures(response);
-    //         if (result.length) {
-    //             var info = [];
-    //             for (var i = 0, ii = result.length; i < ii; ++i) {
-    //                 info.push(Object.keys(result[i].values_));
-    //                 info.push(Object.values(result[i].values_));
-    //                 info.push(result[i].get('OBJECTID'));
-    //                 info.push(result[i].get('C_XIAN'));
-    //                 info.push(result[i].get('C_XIANG'));
-    //                 info.push(result[i].get('C_CUN'));
-    //                 info.push(result[i].get('C_LB'));
-    //                 info.push(result[i].get('C_XB'));
-    //                 info.push(result[i].get('C_TFH'));
-    //                 info.push(result[i].get('C_SHUIXI'));
-    //                 info.push(result[i].get('C_STFQ'));
-    //                 info.push(result[i].get('C_SZZC'));
-    //                 info.push(result[i].get('C_SZZCHZ'));
-    //             }
-    //             container.innerHTML += "<p>";
-    //             container.innerHTML += info[0].join(', ');
-    //             container.innerHTML += "</p>";
-    //             container.innerHTML += "<p>";
-    //             container.innerHTML += info[1].join(', ');
-    //             container.innerHTML += "</p>";
-    //         } else {
-    //             container.innerHTML = '&nbsp;';
-    //         }
-    //     });
-    // }
-    //点击地图关联查询属性域表返回相关feature信息(json形式)
 
+    //点击地图关联查询属性域表返回相关feature信息(json形式)
     var url = mapModule.xbm_wms_layer.getSource().getGetFeatureInfoUrl(
         evt.coordinate, viewResolution, viewProjection,
         {'INFO_FORMAT': 'application/json'});
     if(url){
-        var featuresearch = {};
+        var featureInfo = {};
 
         var parser = new ol.format.GeoJSON();
         $.ajax({
-            async: false,
             url: url,
             dataType: 'json',
             jsonCallback: 'response'
@@ -145,7 +85,7 @@ map.on('click', function(evt) {
                 for (var i = 0, ii = result.length; i < ii; ++i) {
                     for(var key in result[i].values_){
                         if(result[i].values_[key] && key!="geometry"){
-                            featuresearch[key] = result[i].values_[key];
+                            featureInfo[key] = result[i].values_[key];
                         }
                     }
                 }
@@ -156,13 +96,52 @@ map.on('click', function(evt) {
                 type: 'POST',
                 url: '/liaoningResource/getfeatureinfo',
                 traditional:true,
-                data: JSON.stringify(featuresearch),
+                data: JSON.stringify(featureInfo),
                 dataType: 'json',
                 contentType: 'application/json;charset=utf-8',
                 success: function (response) {
+                    //返回对象数组
+                    //{field:***，domain_name:***}(domain_name可能为null),
+                    //{description：***，code:***}(如果根据编码没有查到属性值，则该元素不存在)
                     console.log(response);
+                    for(var i = 0; i < response.length; i++){
+                        if(response[i].hasOwnProperty("field")){
+                            if(response[i].domain_name){
+                                if(response[i+1].hasOwnProperty("descriptio")){
+                                    featureInfo[response[i].field]=response[i+1].descriptio;
+                                    i++;
+                                }
+                            }
+                        }
+                    }
+
+                    //构建dataTable
+                    var data = [];
+                    var columnTitle = [];
+
+                    for(var key in featureInfo){
+                        columnTitle.push({"title": key});
+                        data.push(featureInfo[key]) ;
+                    };
+                    if(data.length){
+                        data = [data];
+                        $(document).ready(function() {
+                            $('#featureInfo').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="featureInfoTable"></table>' );
+                            $('#featureInfoTable').dataTable( {
+                                "data": data,
+                                "columns": columnTitle
+                            } );
+                        } );
+                    } else {
+                        $(document).ready(function() {
+                            $('#featureInfo').html( '<p>No feature selected!</p>' );
+                        } );
+                    }
+
                 }
+
             });
+
         });
 
     }

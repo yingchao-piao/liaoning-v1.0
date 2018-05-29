@@ -103,7 +103,6 @@ map.on('click', function(evt) {
                     //返回对象数组
                     //{field:***，domain_name:***}(domain_name可能为null),
                     //{description：***，code:***}(如果根据编码没有查到属性值，则该元素不存在)
-                    console.log(response);
                     for(var i = 0; i < response.length; i++){
                         if(response[i].hasOwnProperty("field")){
                             if(response[i].domain_name){
@@ -129,7 +128,8 @@ map.on('click', function(evt) {
                             $('#featureInfo').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="featureInfoTable"></table>' );
                             $('#featureInfoTable').dataTable( {
                                 "data": data,
-                                "columns": columnTitle
+                                "columns": columnTitle,
+                                "scrollX": true
                             } );
                         } );
                     } else {

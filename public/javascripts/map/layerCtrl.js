@@ -114,7 +114,7 @@ map.on('click', function(evt) {
                         }
                     }
 
-                    //构建dataTable
+                    //构建GetfeatureInfo dataTable
                     var data = [];
                     var columnTitle = [];
 
